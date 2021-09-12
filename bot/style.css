@@ -1,0 +1,11 @@
+@import 'https://fonts.googleapis.com/css2?family=Roboto&display=swap';:root{--bgColor: rgb(48, 48, 75);--accentColor: #214E34;--font: 'Roboto', sans-serif}body{background-color:var(--bgColor)}#userPhoto{width:96px;height:96px;display:block;margin:35px auto 25px;border-radius:50%;pointer-events:none}div{max-width:600px;width:auto;margin:3em auto;padding:1.5em;background-color:rgb(44, 44, 65);border-radius:.5em}.text{color:#f0f8ff;font-family:var(--font);text-decoration:none;font-size:14px}.title{display:block;color:#f0f8ff;font-family:var(--font);text-decoration:none}#button{max-width:200px;width:180px;height:40px;padding:3px;margin:auto;background-color:#02e777;border-radius:6px;border:none;align-items:center;justify-content:center;display:flex;font-family:var(--font);font-size:14px;color:#f0f8ff;text-decoration:none;font-weight:700;line-height:1.25;cursor:pointer}
+#links {
+    max-width: 250px;
+    width: auto;
+    display: block;
+    margin: 27px auto;
+    color: #02e777;
+}
+a {
+    color: rgba(174, 18, 206, 0.74);
+  }
