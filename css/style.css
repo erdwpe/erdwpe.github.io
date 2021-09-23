@@ -56,3 +56,6 @@ div{max-width:600px;width:auto;margin:3em auto;padding:1.5em;background-color:rg
     background-color: var(--bgColor);
     color: var(--accentColor);
 }
+a {
+    color: white;
+  }
