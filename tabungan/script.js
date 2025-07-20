@@ -114,14 +114,105 @@ function loadHistory() {
   let history = JSON.parse(localStorage.getItem('history')) || [];
   const tbody = document.querySelector('#historyTable tbody');
   tbody.innerHTML = '';
-  history.forEach(item => {
+  history.forEach((item, index) => {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${item.type}</td>
       <td>💵 ${item.amount}</td>
       <td>${item.time}</td>
+      <td>
+        <button class="history-action-button edit" onclick="editHistory(${index})">📝</button>
+        <button class="history-action-button delete" onclick="deleteHistory(${index})">🗑️</button>
+      </td>
     `;
     tbody.appendChild(row);
+  });
+}
+function editHistory(index) {
+  let history = JSON.parse(localStorage.getItem('history')) || [];
+  const item = history[index];
+
+  Swal.fire({
+    title: "Edit Jumlah",
+    html: `
+      <input id="swal-amount" class="swal2-input" inputmode="numeric" pattern="[0-9]*" value="${item.amount.replace(/\./g, '')}">
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Simpan",
+    cancelButtonText: "Batal",
+    didOpen: () => {
+      const input = Swal.getPopup().querySelector("#swal-amount");
+
+      input.addEventListener("input", () => {
+        let raw = input.value.replace(/\D/g, '');
+        input.value = formatNumber(raw);
+      });
+    },
+    preConfirm: () => {
+      const inputVal = Swal.getPopup().querySelector("#swal-amount").value.replace(/\./g, '');
+      if (!inputVal || isNaN(inputVal)) {
+        Swal.showValidationMessage("Masukkan angka yang valid!");
+      }
+      return inputVal;
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const newAmount = parseInt(result.value);
+      const oldAmount = parseInt(item.amount.replace(/\./g, ''));
+      const delta = newAmount - oldAmount;
+
+      // Update total berdasarkan tipe transaksi
+      if (item.type.includes('Tambah')) {
+        total += delta;
+      } else {
+        total -= delta;
+      }
+
+      localStorage.setItem('total', total);
+      document.getElementById('totalAmount').innerText = `💵 ${formatNumber(total)}`;
+      updateProgress();
+
+      // Update data di histori
+      item.amount = formatNumber(newAmount);
+      item.time = new Date().toLocaleString('id-ID'); // 🔄 Update waktu sekarang
+      history[index] = item;
+
+      localStorage.setItem('history', JSON.stringify(history));
+      loadHistory();
+    }
+  });
+}
+
+function deleteHistory(index) {
+  let history = JSON.parse(localStorage.getItem('history')) || [];
+  const item = history[index];
+  const amount = parseInt(item.amount.replace(/\./g, ''));
+
+  Swal.fire({
+    title: 'Hapus Transaksi?',
+    text: `Yakin ingin menghapus transaksi ini?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, hapus!',
+    cancelButtonText: 'Batal'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Update total
+      if (item.type.includes('Tambah')) {
+        total -= amount;
+      } else {
+        total += amount;
+      }
+
+      localStorage.setItem('total', total);
+      document.getElementById('totalAmount').innerText = `💵 ${formatNumber(total)}`;
+      updateProgress();
+
+      // Hapus dari history
+      history.splice(index, 1);
+      localStorage.setItem('history', JSON.stringify(history));
+      loadHistory();
+    }
   });
 }
 
@@ -166,6 +257,17 @@ function loadImage() {
       overlay.addEventListener("click", () => overlay.remove());
       document.body.appendChild(overlay);
     }
+  }
+  function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.classList.remove('active');
+    });
+  
+    document.getElementById(id).classList.add('active');
+    document.querySelector(`.tab-button[onclick="showTab('${id}')"]`).classList.add('active');
   }
   
 

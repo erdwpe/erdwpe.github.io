@@ -11,61 +11,76 @@
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h2>💰 Catatan Tabungan</h2>
 
-    <!-- Tujuan Tabungan -->
-    <div>
-      <input type="file" id="imageInput">
-      <label><strong>🎯 Tujuan Tabungan</strong></label>
-      <div id="preview"></div>
-    </div>
+  <!-- Tab Navigasi -->
+  <div class="tabs">
+    <button class="tab-button active" onclick="showTab('tabungan')">🏦 Tabungan</button>
+    <button class="tab-button" onclick="showTab('riwayat')">📋 Riwayat</button>
+  </div>
 
-    <!-- Target Tabungan -->
-    <div>
-      <label><strong>📉 Target Tabungan</strong></label>
-      <div class="target-row">
-        <input type="text" id="targetInput" inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateTarget()" />
-        <button onclick="saveTarget()">🎯 Simpan Target</button>
+  <!-- Tabungan -->
+  <div id="tabungan" class="tab-content active">
+    <div class="container">
+      <h2>💰 Catatan Tabungan</h2>
+
+      <!-- Tujuan Tabungan -->
+      <div>
+        <input type="file" id="imageInput">
+        <label><strong>🎯 Tujuan Tabungan</strong></label>
+        <div id="preview"></div>
       </div>
-      <div class="progress-container">
-        <div id="progressBar" class="progress-bar"></div>
+
+      <!-- Target Tabungan -->
+      <div class="target-box">
+        <h3>🎯 Target Tabungan</h3>
+        <div class="target-row">
+          <input type="text" id="targetInput" inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateTarget()" />
+          <button onclick="saveTarget()">🎯 Simpan Target</button>
+        </div>
+        <div class="progress-container">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <p id="progressText">📊 0% tercapai</p>
+      </div>      
+
+      <!-- Total Tabungan -->
+      <div class="total-box">
+        <h3>💰 Total Tabungan</h3>
+        <p id="totalAmount" class="total-amount">Rp. 0</p>
       </div>
-      <p id="progressText">📊 0% tercapai</p>
-    </div>
+      
 
-    <!-- Total Tabungan -->
-    <div class="total">
-      <p>Total Tabungan: <span id="totalAmount">💵 0</span></p>
-    </div>
+      <!-- Input Uang -->
+      <div class="input-row">
+        <input type="text" id="amount" placeholder="Masukkan jumlah uang..." inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateProgressPreview()">
+        <select id="type">
+          <option value="add">➕ Tambah</option>
+          <option value="withdraw">➖ Ambil</option>
+        </select>
+        <button onclick="save()">💾 Simpan</button>
+      </div>
 
-    <!-- Input Uang -->
-    <div class="input-row">
-      <input type="text" id="amount" placeholder="Masukkan jumlah uang..." inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateProgressPreview()">
-      <select id="type">
-        <option value="add">➕ Tambah</option>
-        <option value="withdraw">➖ Ambil</option>
-      </select>
-      <button onclick="save()">💾 Simpan</button>
+      <!-- Tombol Reset -->
+      <button onclick="resetAll()" style="background:#ff4d4d; margin-top: 20px;">🗑️ Reset Semua</button>
     </div>
+  </div>
 
-    <!-- Riwayat Transaksi -->
-    <details>
-      <summary>📋 Riwayat Transaksi</summary>
+  <!-- Riwayat Transaksi -->
+  <div id="riwayat" class="tab-content">
+    <div class="container">
+      <h2>📋 Riwayat Transaksi</h2>
       <table id="historyTable">
         <thead>
           <tr>
             <th>Jenis</th>
             <th>Jumlah</th>
             <th>Tanggal</th>
+            <th>Aksi</th>
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
-    </details>
-
-    <!-- Tombol Reset -->
-    <button onclick="resetAll()" style="background:#ff4d4d; margin-top: 20px;">🗑️ Reset Semua</button>
+      </table>      
+    </div>
   </div>
 
   <script src="script.js"></script>
