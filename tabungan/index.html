@@ -25,7 +25,7 @@
     <div>
       <label><strong>📉 Target Tabungan</strong></label>
       <div class="target-row">
-        <input type="text" id="targetInput" oninput="formatNumberInput(this); autoUpdateTarget()" />
+        <input type="text" id="targetInput" inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateTarget()" />
         <button onclick="saveTarget()">🎯 Simpan Target</button>
       </div>
       <div class="progress-container">
@@ -41,7 +41,7 @@
 
     <!-- Input Uang -->
     <div class="input-row">
-      <input type="text" id="amount" placeholder="Masukkan jumlah uang..." oninput="formatNumberInput(this); autoUpdateProgressPreview()">
+      <input type="text" id="amount" placeholder="Masukkan jumlah uang..." inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateProgressPreview()">
       <select id="type">
         <option value="add">➕ Tambah</option>
         <option value="withdraw">➖ Ambil</option>
