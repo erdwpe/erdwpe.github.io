@@ -16,6 +16,7 @@
   <div class="tabs">
     <button class="tab-button active" onclick="showTab('tabungan')">🏦 Tabungan</button>
     <button class="tab-button" onclick="showTab('riwayat')">📋 Riwayat</button>
+    
   </div>
 
   <!-- Tabungan -->
@@ -24,12 +25,11 @@
       <h2>💰 Catatan Tabungan</h2>
 
       <!-- Tujuan Tabungan -->
-      <div>
-        <input type="file" id="imageInput">
-        <label><strong>🎯 Tujuan Tabungan</strong></label>
-        <div id="preview"></div>
-      </div>
-
+      <label><strong>🎯 Tujuan Tabungan</strong></label>
+      <div id="preview"></div>
+      <input type="file" id="imageInput" style="display: none;">
+      <button id="changeImageBtn" onclick="triggerImageChange()">🖼️ Ganti Gambar</button>
+      
       <!-- Target Tabungan -->
       <div class="target-box">
         <h3>🎯 Target Tabungan</h3>
@@ -52,13 +52,20 @@
 
       <!-- Input Uang -->
       <div class="input-row">
-        <input type="text" id="amount" placeholder="Masukkan jumlah uang..." inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateProgressPreview()">
+        <input type="text" id="amount" placeholder="Jumlah uang..." inputmode="numeric" pattern="[0-9]*" oninput="formatNumberInput(this); autoUpdateProgressPreview()">
         <select id="type">
           <option value="add">➕ Tambah</option>
           <option value="withdraw">➖ Ambil</option>
         </select>
+      </div>
+      
+      <input type="text" id="note" placeholder="✏️ Catatan (opsional)" style="margin-top:8px; width:100%;">
+      
+      <div class="action-row">
+        <input type="date" id="manualDate">
         <button onclick="save()">💾 Simpan</button>
       </div>
+      
 
       <!-- Tombol Reset -->
       <button onclick="resetAll()" style="background:#ff4d4d; margin-top: 20px;">🗑️ Reset Semua</button>
@@ -69,6 +76,8 @@
   <div id="riwayat" class="tab-content">
     <div class="container">
       <h2>📋 Riwayat Transaksi</h2>
+      <label for="filterDate">📅 Filter Tanggal:</label>
+<input type="date" id="filterDate" onchange="loadHistory()">
       <table id="historyTable">
         <thead>
           <tr>

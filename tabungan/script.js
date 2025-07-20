@@ -36,6 +36,9 @@ function save() {
   let amountStr = document.getElementById('amount').value.replace(/\./g, '');
   let amount = parseInt(amountStr);
   let type = document.getElementById('type').value;
+  let note = document.getElementById('note').value.trim();
+  let manualDate = document.getElementById('manualDate').value;
+
   if (isNaN(amount)) return;
 
   if (type === 'add') {
@@ -47,9 +50,19 @@ function save() {
   localStorage.setItem('total', total);
   document.getElementById('totalAmount').innerText = `💵 ${formatNumber(total)}`;
   document.getElementById('amount').value = '';
+  document.getElementById('note').value = '';
+  document.getElementById('manualDate').value = '';
   updateProgress();
-  addHistory(type, amount);
+
+  const now = new Date();
+  const selectedDate = manualDate ? new Date(`${manualDate}T${now.toTimeString().slice(0, 8)}`) : now;
+
+  const usedDate = selectedDate.toISOString().split('T')[0];
+  const usedTime = selectedDate.toLocaleString('id-ID');
+
+  addHistory(type, amount, note, usedDate, usedTime);
 }
+
 
 function saveTarget() {
   let targetStr = document.getElementById('targetInput').value.replace(/\./g, '');
@@ -71,6 +84,14 @@ function updateProgress() {
   const percent = Math.min((total / target) * 100, 100);
   progressBar.style.width = percent + '%';
   progressText.innerText = `📊 ${percent.toFixed(1)}% tercapai`;
+  if (percent >= 100 && !localStorage.getItem('completed')) {
+    Swal.fire({
+      title: "🎉 Selamat!",
+      text: "Target tabunganmu telah tercapai!",
+      icon: "success"
+    });
+    localStorage.setItem('completed', 'true');
+  }
 }
 
 function autoUpdateTarget() {
@@ -97,29 +118,37 @@ function autoUpdateProgressPreview() {
   progressText.innerText = `📊 ${percent.toFixed(1)}% tercapai`;
 }
 
-function addHistory(type, amount) {
+function addHistory(type, amount, note = '', date = '', time = '') {
   let history = JSON.parse(localStorage.getItem('history')) || [];
-  const timestamp = new Date().toLocaleString('id-ID');
+
   const entry = {
     type: type === 'add' ? '➕ Tambah' : '➖ Ambil',
     amount: formatNumber(amount),
-    time: timestamp
+    note,
+    time: time || new Date().toLocaleString('id-ID'),
+    date: date || new Date().toISOString().split('T')[0]
   };
+
   history.unshift(entry);
   localStorage.setItem('history', JSON.stringify(history));
   loadHistory();
 }
 
+
 function loadHistory() {
   let history = JSON.parse(localStorage.getItem('history')) || [];
   const tbody = document.querySelector('#historyTable tbody');
+  const filterDate = document.getElementById('filterDate')?.value;
+
   tbody.innerHTML = '';
   history.forEach((item, index) => {
+    if (filterDate && item.date !== filterDate) return;
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${item.type}</td>
       <td>💵 ${item.amount}</td>
-      <td>${item.time}</td>
+      <td>${item.time}<br><small>${item.note || ''}</small></td>
       <td>
         <button class="history-action-button edit" onclick="editHistory(${index})">📝</button>
         <button class="history-action-button delete" onclick="deleteHistory(${index})">🗑️</button>
@@ -127,61 +156,73 @@ function loadHistory() {
     `;
     tbody.appendChild(row);
   });
+
 }
 function editHistory(index) {
   let history = JSON.parse(localStorage.getItem('history')) || [];
   const item = history[index];
+  const initialAmount = item.amount.replace(/\./g, '');
+  const initialNote = item.note || '';
 
   Swal.fire({
-    title: "Edit Jumlah",
+    title: "Edit Transaksi",
     html: `
-      <input id="swal-amount" class="swal2-input" inputmode="numeric" pattern="[0-9]*" value="${item.amount.replace(/\./g, '')}">
+      <label style="display:block; text-align:left; font-size:14px; margin-bottom:4px;">✍️ Ubah Nominal Uang</label>
+      <input id="swal-amount" class="swal2-input" inputmode="numeric" pattern="[0-9]*" value="${initialAmount}">
+      <label style="display:block; text-align:left; font-size:14px; margin-top:10px; margin-bottom:4px;">🗒️ Ubah Catatan</label>
+      <input id="swal-note" class="swal2-input" placeholder="Catatan (opsional)" value="${initialNote}">
     `,
     showCancelButton: true,
     confirmButtonText: "Simpan",
     cancelButtonText: "Batal",
     didOpen: () => {
       const input = Swal.getPopup().querySelector("#swal-amount");
-
       input.addEventListener("input", () => {
         let raw = input.value.replace(/\D/g, '');
         input.value = formatNumber(raw);
       });
     },
     preConfirm: () => {
-      const inputVal = Swal.getPopup().querySelector("#swal-amount").value.replace(/\./g, '');
-      if (!inputVal || isNaN(inputVal)) {
-        Swal.showValidationMessage("Masukkan angka yang valid!");
+      const inputAmount = Swal.getPopup().querySelector("#swal-amount").value.replace(/\./g, '');
+      const inputNote = Swal.getPopup().querySelector("#swal-note").value.trim();
+
+      if (!inputAmount || isNaN(inputAmount)) {
+        Swal.showValidationMessage("Masukkan jumlah yang valid!");
       }
-      return inputVal;
+
+      return {
+        amount: parseInt(inputAmount),
+        note: inputNote
+      };
     }
   }).then((result) => {
     if (result.isConfirmed) {
-      const newAmount = parseInt(result.value);
+      const newAmount = result.value.amount;
+      const newNote = result.value.note;
       const oldAmount = parseInt(item.amount.replace(/\./g, ''));
       const delta = newAmount - oldAmount;
 
-      // Update total berdasarkan tipe transaksi
       if (item.type.includes('Tambah')) {
         total += delta;
       } else {
         total -= delta;
       }
 
+      item.amount = formatNumber(newAmount);
+      item.note = newNote;
+      item.time = new Date().toLocaleString('id-ID');
+      item.date = new Date().toISOString().split('T')[0];
+
       localStorage.setItem('total', total);
+      localStorage.setItem('history', JSON.stringify(history));
+
       document.getElementById('totalAmount').innerText = `💵 ${formatNumber(total)}`;
       updateProgress();
-
-      // Update data di histori
-      item.amount = formatNumber(newAmount);
-      item.time = new Date().toLocaleString('id-ID'); // 🔄 Update waktu sekarang
-      history[index] = item;
-
-      localStorage.setItem('history', JSON.stringify(history));
       loadHistory();
     }
   });
 }
+
 
 function deleteHistory(index) {
   let history = JSON.parse(localStorage.getItem('history')) || [];
@@ -230,7 +271,8 @@ function loadImage() {
       img.addEventListener('click', () => toggleImagePreview(imgData));
     } else {
       preview.innerHTML = '';
-      imageInput.style.display = 'block'; // Tampilkan kembali input file
+// Tetap tampilkan tombol ganti gambar, tapi sembunyikan input file
+imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediakan
     }
   }
   
@@ -307,5 +349,8 @@ function loadImage() {
         });
       }
     });
+  }
+  function triggerImageChange() {
+    document.getElementById('imageInput').click();
   }
   
