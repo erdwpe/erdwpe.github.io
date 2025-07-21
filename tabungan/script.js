@@ -402,9 +402,10 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
   
     sorted.forEach((item) => {
       const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
+     // Safe fallback untuk tanggal
       const safeDate = item.date || (item.time ? item.time.split(" ")[0] : new Date().toISOString().split("T")[0]);
+    
       let pemasukan = "-", pengeluaran = "-";
-  
       if (item.type.includes("Tambah")) {
         totalTambah += nominal;
         saldo += nominal;
@@ -414,13 +415,13 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
         saldo -= nominal;
         pengeluaran = formatNumber(nominal);
       }
-  
+    
       tableData.push([
-        formatDateID(safeDate),
+        formatDateID(safeDate),    // ⬅️ Pastikan ini di kolom pertama
         item.note || "-",
         pemasukan,
         pengeluaran,
-        formatNumber(safeDate)
+        formatNumber(saldo)
       ]);
     });
   
