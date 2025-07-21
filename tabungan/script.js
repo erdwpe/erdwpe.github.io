@@ -402,6 +402,7 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
   
     sorted.forEach((item) => {
       const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
+      const safeDate = item.date || (item.time ? item.time.split(" ")[0] : new Date().toISOString().split("T")[0]);
       let pemasukan = "-", pengeluaran = "-";
   
       if (item.type.includes("Tambah")) {
@@ -415,11 +416,11 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
       }
   
       tableData.push([
-        formatDateID(item.date),
+        formatDateID(safeDate),
         item.note || "-",
         pemasukan,
         pengeluaran,
-        formatNumber(saldo)
+        formatNumber(safeDate)
       ]);
     });
   
