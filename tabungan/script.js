@@ -401,9 +401,24 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
     let saldo = 0;
   
     sorted.forEach((item) => {
+      // 💡 Lewati data rusak yang tidak punya amount dan type
+      if (!item || !item.amount || !item.type) return;
+    
       const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
-     // Safe fallback untuk tanggal
-      const safeDate = item.date || (item.time ? item.time.split(" ")[0] : new Date().toISOString().split("T")[0]);
+    
+      // Gunakan tanggal aman
+      let safeDate = item.date;
+      if (!safeDate && item.time) {
+        const match = item.time.match(/\d{2}\/\d{2}\/\d{4}/); // Format dari toLocaleString
+        if (match) {
+          const parts = match[0].split('/');
+          safeDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // yyyy-mm-dd
+        } else {
+          safeDate = new Date().toISOString().split("T")[0];
+        }
+      } else if (!safeDate) {
+        safeDate = new Date().toISOString().split("T")[0];
+      }
     
       let pemasukan = "-", pengeluaran = "-";
       if (item.type.includes("Tambah")) {
@@ -417,14 +432,15 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
       }
     
       tableData.push([
-        formatDateID(safeDate),    // ⬅️ Pastikan ini di kolom pertama
+        formatDateID(safeDate),
         item.note || "-",
         pemasukan,
         pengeluaran,
         formatNumber(saldo)
       ]);
     });
-  
+    
+      
     doc.autoTable({
       head: [["Tanggal", "Catatan", "Pemasukan", "Pengeluaran", "Saldo"]],
       body: tableData,
