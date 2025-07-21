@@ -304,3 +304,35 @@ th {
 #changeImageBtn:hover {
   transform: scale(1.03);
 }
+.remaining-box {
+  background: #fef08a;
+  color: #111;
+  padding: 12px;
+  border-radius: 12px;
+  margin-top: 10px;
+  box-shadow: 3px 3px 0 #000;
+  font-weight: bold;
+  text-align: center;
+}
+.import-export-row {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.import-export-row button {
+  background-color: #fcd34d;
+  border: 2px solid #000;
+  padding: 8px 14px;
+  font-weight: bold;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+  transition: transform 0.2s ease;
+}
+
+.import-export-row button:hover {
+  transform: scale(1.03);
+}

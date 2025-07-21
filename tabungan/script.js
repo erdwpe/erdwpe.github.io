@@ -31,7 +31,19 @@ function formatNumberInput(input) {
   let val = input.value.replace(/\D/g, '');
   input.value = formatNumber(val);
 }
+function formatDateID(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("id-ID", {
+    day: "2-digit", month: "short", year: "numeric"
+  });
+}
 
+function formatDateText(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("id-ID", {
+    weekday: "short", year: "numeric", month: "long", day: "numeric"
+  });
+}
 function save() {
   let amountStr = document.getElementById('amount').value.replace(/\./g, '');
   let amount = parseInt(amountStr);
@@ -78,20 +90,17 @@ function updateProgress() {
   if (target <= 0) {
     progressBar.style.width = '0%';
     progressText.innerText = '📊 Belum ada target';
+    document.getElementById('remainingAmount').innerText = `💰 Rp 0`;
     return;
   }
 
   const percent = Math.min((total / target) * 100, 100);
   progressBar.style.width = percent + '%';
   progressText.innerText = `📊 ${percent.toFixed(1)}% tercapai`;
-  if (percent >= 100 && !localStorage.getItem('completed')) {
-    Swal.fire({
-      title: "🎉 Selamat!",
-      text: "Target tabunganmu telah tercapai!",
-      icon: "success"
-    });
-    localStorage.setItem('completed', 'true');
-  }
+
+  // 💰 Hitung total kurang
+  const remaining = target - total;
+  document.getElementById('remainingAmount').innerText = `💰 Rp ${formatNumber(remaining > 0 ? remaining : 0)}`;
 }
 
 function autoUpdateTarget() {
@@ -138,11 +147,11 @@ function addHistory(type, amount, note = '', date = '', time = '') {
 function loadHistory() {
   let history = JSON.parse(localStorage.getItem('history')) || [];
   const tbody = document.querySelector('#historyTable tbody');
-  const filterDate = document.getElementById('filterDate')?.value;
+  const filterMonth = document.getElementById('filterMonth')?.value;
 
   tbody.innerHTML = '';
   history.forEach((item, index) => {
-    if (filterDate && item.date !== filterDate) return;
+    if (filterMonth && !item.date.startsWith(filterMonth)) return;
 
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -156,8 +165,8 @@ function loadHistory() {
     `;
     tbody.appendChild(row);
   });
-
 }
+
 function editHistory(index) {
   let history = JSON.parse(localStorage.getItem('history')) || [];
   const item = history[index];
@@ -312,7 +321,153 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
     document.querySelector(`.tab-button[onclick="showTab('${id}')"]`).classList.add('active');
   }
   
-
+  function exportData() {
+    const data = {
+      total: localStorage.getItem('total') || "0",
+      target: localStorage.getItem('target') || "0",
+      history: localStorage.getItem('history') || "[]",
+      image: localStorage.getItem('image') || ""
+    };
+  
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tabungan_export.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+  
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (!imported || typeof imported !== "object") throw new Error();
+  
+        localStorage.setItem("total", imported.total || "0");
+        localStorage.setItem("target", imported.target || "0");
+        localStorage.setItem("history", imported.history || "[]");
+        localStorage.setItem("image", imported.image || "");
+  
+        Swal.fire({
+          title: "Berhasil!",
+          text: "Data berhasil diimpor.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false
+        });
+  
+        location.reload();
+      } catch (err) {
+        Swal.fire({
+          title: "Gagal",
+          text: "Format file tidak valid!",
+          icon: "error"
+        });
+      }
+    };
+    reader.readAsText(file);
+  }
+  function exportPDF() {
+    const history = JSON.parse(localStorage.getItem('history')) || [];
+  
+    if (history.length === 0) {
+      Swal.fire("Kosong", "Tidak ada transaksi untuk diexport.", "info");
+      return;
+    }
+  
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+  
+    const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const firstDate = sorted[0].date;
+    const lastDate = sorted[sorted.length - 1].date;
+  
+    doc.setFontSize(16);
+    doc.text("Riwayat Transaksi Tabungan", 105, 15, { align: "center" });
+  
+    doc.setFontSize(8);
+    doc.text(`Periode: ${formatDateText(firstDate)} - ${formatDateText(lastDate)}`, 105, 22, { align: "center" });
+    doc.text(`Dibuat: ${formatDateText(new Date())}`, 105, 28, { align: "center" });
+  
+    const tableData = [];
+    let totalTambah = 0;
+    let totalAmbil = 0;
+    let saldo = 0;
+  
+    sorted.forEach((item) => {
+      const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
+      let pemasukan = "-", pengeluaran = "-";
+  
+      if (item.type.includes("Tambah")) {
+        totalTambah += nominal;
+        saldo += nominal;
+        pemasukan = formatNumber(nominal);
+      } else {
+        totalAmbil += nominal;
+        saldo -= nominal;
+        pengeluaran = formatNumber(nominal);
+      }
+  
+      tableData.push([
+        formatDateID(item.date),
+        item.note || "-",
+        pemasukan,
+        pengeluaran,
+        formatNumber(saldo)
+      ]);
+    });
+  
+    doc.autoTable({
+      head: [["Tanggal", "Catatan", "Pemasukan", "Pengeluaran", "Saldo"]],
+      body: tableData,
+      startY: 35,
+      headStyles: {
+        fillColor: [76, 175, 80],
+        textColor: 255
+      },
+      alternateRowStyles: {
+        fillColor: [240, 240, 240]
+      },
+      styles: {
+        fontSize: 8,
+        cellPadding: 3
+      },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' }
+      }
+    });
+  
+    doc.autoTable({
+      body: [
+        ['Total Pemasukan', formatNumber(totalTambah)],
+        ['Total Pengeluaran', formatNumber(totalAmbil)],
+        ['Saldo Akhir', formatNumber(saldo)]
+      ],
+      startY: doc.autoTable.previous.finalY + 10,
+      margin: { left: 120 },
+      styles: {
+        fontSize: 10,
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        1: { halign: 'right' }
+      }
+    });
+  
+    doc.save(`Riwayat Tabungan - ${firstDate} - ${lastDate}.pdf`);
+  }
+  
+  
+  
   function resetAll() {
     Swal.fire({
       title: "Yakin ingin mereset semuanya?",

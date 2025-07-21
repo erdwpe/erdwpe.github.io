@@ -9,6 +9,10 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <!-- Font Google -->
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+  <!--cdn js autotabble-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
 </head>
 <body>
 
@@ -47,6 +51,9 @@
       <div class="total-box">
         <h3>💰 Total Tabungan</h3>
         <p id="totalAmount" class="total-amount">Rp. 0</p>
+        <div class="remaining-box">
+          <p>Sisa untuk mencapai target: <span id="remainingAmount">💰 Rp 0</span></p>
+        </div>        
       </div>
       
 
@@ -76,8 +83,14 @@
   <div id="riwayat" class="tab-content">
     <div class="container">
       <h2>📋 Riwayat Transaksi</h2>
-      <label for="filterDate">📅 Filter Tanggal:</label>
-<input type="date" id="filterDate" onchange="loadHistory()">
+      <div class="import-export-row">
+        <button onclick="exportData()">📤 Export Data</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button onclick="document.getElementById('importFile').click()">📥 Import Data</button>
+        <button onclick="exportPDF()">📄 Export PDF</button>
+      </div>      
+      <label for="filterMonth">📅 Filter Bulan:</label>
+      <input type="month" id="filterMonth" onchange="loadHistory()">      
       <table id="historyTable">
         <thead>
           <tr>
