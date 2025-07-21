@@ -38,20 +38,26 @@ function formatDateID(dateStr) {
   });
 }
 
+// 🔧 Update fungsi formatDateText
 function formatDateText(dateStr) {
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "Tanggal Tidak Valid";
   return date.toLocaleDateString("id-ID", {
     weekday: "short", year: "numeric", month: "long", day: "numeric"
   });
 }
+
 function save() {
   let amountStr = document.getElementById('amount').value.replace(/\./g, '');
   let amount = parseInt(amountStr);
   let type = document.getElementById('type').value;
   let note = document.getElementById('note').value.trim();
   let manualDate = document.getElementById('manualDate').value;
-
-  if (isNaN(amount)) return;
+  if (manualDate && isNaN(new Date(manualDate).getTime())) {
+    Swal.fire("Error", "Tanggal tidak valid!", "error");
+    return;
+  }
+    if (isNaN(amount)) return;
 
   if (type === 'add') {
     total += amount;
@@ -373,156 +379,168 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
     };
     reader.readAsText(file);
   }
-  function exportPDF() {
-    const history = JSON.parse(localStorage.getItem('history')) || [];
-  
-    if (history.length === 0) {
-      Swal.fire("Kosong", "Tidak ada transaksi untuk diexport.", "info");
-      return;
+  // 🔧 Update bagian exportPDF()
+function exportPDF() {
+  const history = JSON.parse(localStorage.getItem('history')) || [];
+
+  if (history.length === 0) {
+    Swal.fire("Kosong", "Tidak ada transaksi untuk diexport.", "info");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // ✅ Filter hanya yang punya tanggal valid
+  const sorted = [...history]
+  .map(item => {
+    let dateStr = item.date;
+
+    // Jika item.date kosong, coba parse dari item.time
+    if (!dateStr && item.time) {
+      const match = item.time.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (match) {
+        const [_, d, m, y] = match;
+        dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
     }
+
+    return {
+      ...item,
+      safeDate: dateStr || new Date().toISOString().split("T")[0]
+    };
+  })
+  .filter(item => !isNaN(new Date(item.safeDate).getTime()))
+  .sort((a, b) => new Date(a.safeDate) - new Date(b.safeDate));
+
+  const firstDate = sorted[0]?.safeDate || new Date().toISOString().split("T")[0];
+  const lastDate = sorted[sorted.length - 1]?.safeDate || new Date().toISOString().split("T")[0];
   
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-  
-    const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
-    const firstDate = sorted[0].date;
-    const lastDate = sorted[sorted.length - 1].date;
-  
-    doc.setFontSize(16);
-    doc.text("Riwayat Transaksi Tabungan", 105, 15, { align: "center" });
-  
-    doc.setFontSize(8);
-    doc.text(`Periode: ${formatDateText(firstDate)} - ${formatDateText(lastDate)}`, 105, 22, { align: "center" });
-    doc.text(`Dibuat: ${formatDateText(new Date())}`, 105, 28, { align: "center" });
-  
-    const tableData = [];
-    let totalTambah = 0;
-    let totalAmbil = 0;
-    let saldo = 0;
-  
-    sorted.forEach((item) => {
-      // 💡 Lewati data rusak yang tidak punya amount dan type
-      if (!item || !item.amount || !item.type) return;
-    
-      const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
-    
-      // Gunakan tanggal aman
-      let safeDate = item.date;
-      if (!safeDate && item.time) {
-        const match = item.time.match(/\d{2}\/\d{2}\/\d{4}/); // Format dari toLocaleString
-        if (match) {
-          const parts = match[0].split('/');
-          safeDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // yyyy-mm-dd
-        } else {
-          safeDate = new Date().toISOString().split("T")[0];
-        }
-      } else if (!safeDate) {
-        safeDate = new Date().toISOString().split("T")[0];
-      }
-    
-      let pemasukan = "-", pengeluaran = "-";
-      if (item.type.includes("Tambah")) {
-        totalTambah += nominal;
-        saldo += nominal;
-        pemasukan = formatNumber(nominal);
-      } else {
-        totalAmbil += nominal;
-        saldo -= nominal;
-        pengeluaran = formatNumber(nominal);
-      }
-    
-      tableData.push([
-        formatDateID(safeDate),
-        item.note || "-",
-        pemasukan,
-        pengeluaran,
-        formatNumber(saldo)
-      ]);
-    });
-    
-      
-    doc.autoTable({
-      head: [["Tanggal", "Catatan", "Pemasukan", "Pengeluaran", "Saldo"]],
-      body: tableData,
-      startY: 35,
-      headStyles: {
-        fillColor: [76, 175, 80],
-        textColor: 255
-      },
-      alternateRowStyles: {
-        fillColor: [240, 240, 240]
-      },
-      styles: {
-        fontSize: 8,
-        cellPadding: 3
-      },
-      columnStyles: {
-        2: { halign: 'right' },
-        3: { halign: 'right' },
-        4: { halign: 'right' }
-      }
-    });
-  
-    doc.autoTable({
-      body: [
-        ['Total Pemasukan', formatNumber(totalTambah)],
-        ['Total Pengeluaran', formatNumber(totalAmbil)],
-        ['Saldo Akhir', formatNumber(saldo)]
-      ],
-      startY: doc.autoTable.previous.finalY + 10,
-      margin: { left: 120 },
-      styles: {
-        fontSize: 10,
-        fontStyle: 'bold',
-        halign: 'right'
-      },
-      columnStyles: {
-        1: { halign: 'right' }
-      }
-    });
-  
-    doc.save(`Riwayat Tabungan - ${firstDate} - ${lastDate}.pdf`);
-  }
-  
-  
-  
-  function resetAll() {
-    Swal.fire({
-      title: "Yakin ingin mereset semuanya?",
-      text: "Semua data tabungan, target, gambar, dan riwayat akan dihapus!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Ya, hapus!",
-      cancelButtonText: "Batal",
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        localStorage.clear();
-        total = 0;
-        target = 0;
-        document.getElementById('amount').value = '';
-        document.getElementById('targetInput').value = '';
-        document.getElementById('totalAmount').innerText = '💵 0';
-        document.getElementById('progressBar').style.width = '0%';
-        document.getElementById('progressText').innerText = '📊 0% tercapai';
-        document.querySelector('#historyTable tbody').innerHTML = '';
-        
-        // Reset dan tampilkan input file
-        document.getElementById('preview').innerHTML = '';
-        document.getElementById('imageInput').value = '';
-        document.getElementById('imageInput').style.display = 'block';
-  
-        Swal.fire({
-          title: 'Berhasil!',
-          text: 'Semua data telah direset.',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false
-        });
-      }
-    });
-  }
+  doc.setFontSize(16);
+  doc.text("Riwayat Transaksi Tabungan", 105, 15, { align: "center" });
+
+  doc.setFontSize(8);
+  doc.text(`Periode: ${formatDateText(firstDate)} - ${formatDateText(lastDate)}`, 105, 22, { align: "center" });
+  doc.text(`Dibuat: ${formatDateText(new Date())}`, 105, 28, { align: "center" });
+
+  const tableData = [];
+  let totalTambah = 0;
+  let totalAmbil = 0;
+  let saldo = 0;
+
+  sorted.forEach((item) => {
+    if (!item || !item.amount || !item.type) return;
+
+    const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
+    //const safeDate = item.date;
+
+    let pemasukan = "-", pengeluaran = "-";
+    if (item.type.includes("Tambah")) {
+      totalTambah += nominal;
+      saldo += nominal;
+      pemasukan = formatNumber(nominal);
+    } else {
+      totalAmbil += nominal;
+      saldo -= nominal;
+      pengeluaran = formatNumber(nominal);
+    }
+
+    tableData.push([
+      formatDateID(item.safeDate),
+      item.note || "-",
+      pemasukan,
+      pengeluaran,
+      formatNumber(saldo)
+    ]);
+  });
+
+  doc.autoTable({
+    head: [["Tanggal", "Catatan", "Pemasukan", "Pengeluaran", "Saldo"]],
+    body: tableData,
+    startY: 35,
+    headStyles: {
+      fillColor: [76, 175, 80],
+      textColor: 255
+    },
+    alternateRowStyles: {
+      fillColor: [240, 240, 240]
+    },
+    styles: {
+      fontSize: 8,
+      cellPadding: 3
+    },
+    columnStyles: {
+      2: { halign: 'right' },
+      3: { halign: 'right' },
+      4: { halign: 'right' }
+    }
+  });
+
+  doc.autoTable({
+    body: [
+      ['Total Pemasukan', formatNumber(totalTambah)],
+      ['Total Pengeluaran', formatNumber(totalAmbil)],
+      ['Saldo Akhir', formatNumber(saldo)]
+    ],
+    startY: doc.autoTable.previous.finalY + 10,
+    margin: { left: 120 },
+    styles: {
+      fontSize: 10,
+      fontStyle: 'bold',
+      halign: 'right'
+    },
+    columnStyles: {
+      1: { halign: 'right' }
+    }
+  });
+
+  doc.save(`Riwayat Tabungan - ${firstDate} - ${lastDate}.pdf`);
+}
+
+function resetAll() {
+  Swal.fire({
+    title: "Yakin ingin mereset semuanya?",
+    text: "Semua data tabungan, target, gambar, dan riwayat akan dihapus!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Ya, hapus!",
+    cancelButtonText: "Batal",
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6"
+  }).then((result) => {
+    if (result.isConfirmed) {
+      localStorage.clear();
+      total = 0;
+      target = 0;
+
+      // Reset input dan tampilan
+      document.getElementById('amount').value = '';
+      document.getElementById('targetInput').value = '';
+      document.getElementById('totalAmount').innerText = '💵 0';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('progressText').innerText = '📊 0% tercapai';
+      document.getElementById('remainingAmount').innerText = `💰 Rp 0`;
+      document.querySelector('#historyTable tbody').innerHTML = '';
+
+      // Reset gambar
+      document.getElementById('preview').innerHTML = '';
+      document.getElementById('imageInput').value = '';
+      document.getElementById('imageInput').style.display = 'block';
+
+      // 🔧 Penting! Reset ulang progress bar & hitung ulang
+      updateProgress();
+
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Semua data telah direset.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+  });
+}
+
   function triggerImageChange() {
     document.getElementById('imageInput').click();
   }
