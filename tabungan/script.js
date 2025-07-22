@@ -288,74 +288,86 @@ function loadImage() {
     imageInput.style.display = 'block';
   }
 }
+function loadRekapBulanan() {
+  const history = JSON.parse(localStorage.getItem('history')) || [];
+  const summary = {};
 
-  function loadRekapBulanan() {
-    const history = JSON.parse(localStorage.getItem('history')) || [];
-    const summary = {};
-  
-    history.forEach(item => {
-      let safeDate = item.date;
-  
-      // Coba parse dari item.time jika date kosong
-      if (!safeDate || isNaN(new Date(safeDate).getTime())) {
-        const match = item.time?.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if (match) {
-          const [_, d, m, y] = match;
-          safeDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-        } else {
-          return;
-        }
-      }
-  
-      const date = new Date(safeDate);
-      if (isNaN(date.getTime())) return;
-  
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
-  
-      if (!summary[key]) {
-        summary[key] = { pemasukan: 0, pengeluaran: 0 };
-      }
-  
-      if (item.type.includes('Tambah')) {
-        summary[key].pemasukan += nominal;
+  let totalPemasukan = 0;
+  let totalPengeluaran = 0;
+  let totalSaldoAkhir = 0;
+
+  history.forEach(item => {
+    let safeDate = item.date;
+
+    if (!safeDate || isNaN(new Date(safeDate).getTime())) {
+      const match = item.time?.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (match) {
+        const [_, d, m, y] = match;
+        safeDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
       } else {
-        summary[key].pengeluaran += nominal;
+        return;
       }
-    });
-  
-    const tbody = document.querySelector('#rekapTable tbody');
-    tbody.innerHTML = '';
-  
-    let totalSaldoAkhir = 0;
-  
-    Object.keys(summary).sort().forEach(monthKey => {
-      const data = summary[monthKey];
-      const saldo = data.pemasukan - data.pengeluaran;
-      totalSaldoAkhir += saldo;
-  
-      const date = new Date(`${monthKey}-01`);
-      const labelBulan = date.toLocaleDateString("id-ID", { month: 'long', year: 'numeric' });
-  
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${labelBulan}</td>
-        <td>➕ Rp ${formatNumber(data.pemasukan)}</td>
-        <td>➖ Rp ${formatNumber(data.pengeluaran)}</td>
-        <td>💰 Rp ${formatNumber(saldo)}</td>
-      `;
-      tbody.appendChild(row);
-    });
-  
-    const totalBox = document.getElementById('totalRekapBox');
-    totalBox.innerHTML = `
-    <div style="background: gold; color: #111; padding: 6px 12px; border-radius: 10px; display: inline-block; max-width: 100%; text-align: center;">
-      <div style="font-weight: bold;">Total Saldo Akhir:</div>
-      <div style="color: green; font-weight: bold; font-size: 18px; word-break: break-word;">Rp ${formatNumber(totalSaldoAkhir)}</div>
+    }
+
+    const date = new Date(safeDate);
+    if (isNaN(date.getTime())) return;
+
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
+
+    if (!summary[key]) {
+      summary[key] = { pemasukan: 0, pengeluaran: 0 };
+    }
+
+    if (item.type.includes('Tambah')) {
+      summary[key].pemasukan += nominal;
+      totalPemasukan += nominal;
+    } else {
+      summary[key].pengeluaran += nominal;
+      totalPengeluaran += nominal;
+    }
+  });
+
+  const tbody = document.querySelector('#rekapTable tbody');
+  tbody.innerHTML = '';
+
+  Object.keys(summary).sort().forEach(monthKey => {
+    const data = summary[monthKey];
+    const saldo = data.pemasukan - data.pengeluaran;
+    totalSaldoAkhir += saldo;
+
+    const date = new Date(`${monthKey}-01`);
+    const labelBulan = date.toLocaleDateString("id-ID", { month: 'long', year: 'numeric' });
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${labelBulan}</td>
+      <td>➕ Rp ${formatNumber(data.pemasukan)}</td>
+      <td>➖ Rp ${formatNumber(data.pengeluaran)}</td>
+      <td>💰 Rp ${formatNumber(saldo)}</td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  const totalBox = document.getElementById('totalRekapBox');
+  totalBox.innerHTML = `
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px;">
+      <div style="background: #ffff66; padding: 10px 20px; border-radius: 12px; text-align: center; flex: 1; min-width: 180px;">
+        <div style="color: black; font-weight: bold;">Total Pemasukan:</div>
+        <div style="color: green; font-weight: bold; font-size: 18px;">Rp ${formatNumber(totalPemasukan)}</div>
+      </div>
+      <div style="background: #ff9999; padding: 10px 20px; border-radius: 12px; text-align: center; flex: 1; min-width: 180px;">
+        <div style="color: black; font-weight: bold;">Total Pengeluaran:</div>
+        <div style="color: darkred; font-weight: bold; font-size: 18px;">Rp ${formatNumber(totalPengeluaran)}</div>
+      </div>
+      <div style="background: #2bd664; padding: 10px 20px; border-radius: 12px; text-align: center; flex: 1; min-width: 180px;">
+        <div style="color: black; font-weight: bold;">Saldo Akhir:</div>
+        <div style="color: black; font-weight: bold; font-size: 20px;">Rp ${formatNumber(totalSaldoAkhir)}</div>
+      </div>
     </div>
-  `;  
-  }
-  
+  `;
+}
+
   
   // Fungsi untuk fullscreen preview
   function toggleImagePreview(src) {
@@ -454,6 +466,80 @@ function loadImage() {
     a.click();
     document.body.removeChild(a);
   }
+  function exportRekapToPDF() {
+    const rekapRows = Array.from(document.querySelectorAll("#rekapTable tbody tr"));
+    if (rekapRows.length === 0) {
+      alert("Belum ada data untuk diekspor.");
+      return;
+    }
+  
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+  
+    const tanggalBuat = formatTanggal(new Date());
+    const periodeAwal = rekapRows[0].querySelector("td").innerText;
+    const periodeAkhir = rekapRows[rekapRows.length - 1].querySelector("td").innerText;
+  
+    // Header
+    doc.setFontSize(14);
+    doc.text("Riwayat Transaksi Tabungan", 105, 15, { align: "center" });
+    doc.setFontSize(10);
+    doc.text(`Periode: ${periodeAwal} - ${periodeAkhir}`, 105, 22, { align: "center" });
+    doc.text(`Dibuat: ${tanggalBuat}`, 105, 28, { align: "center" });
+  
+    // Ambil data tabel
+    const tableBody = [];
+    let totalMasuk = 0;
+    let totalKeluar = 0;
+    rekapRows.forEach(row => {
+      const cells = row.querySelectorAll("td");
+      const bulan = cells[0].innerText;
+      const masuk = parseRupiah(cells[1].innerText);
+      const keluar = parseRupiah(cells[2].innerText);
+      tableBody.push([
+        bulan,
+        formatRupiah(masuk),
+        formatRupiah(keluar)
+      ]);
+      totalMasuk += masuk;
+      totalKeluar += keluar;
+    });
+  
+    // Tabel Rekap
+    doc.autoTable({
+      startY: 35,
+      head: [["Bulan", "Total Pemasukan", "Total Pengeluaran"]],
+      body: tableBody,
+      styles: { halign: "center" },
+      headStyles: { fillColor: [46, 125, 50] }
+    });
+  
+    const finalY = doc.lastAutoTable.finalY + 10;
+    const saldoAkhir = totalMasuk - totalKeluar;
+    doc.setFontSize(12);
+    doc.text(`Total Pemasukan: ${formatRupiah(totalMasuk)}`, 14, finalY);
+    doc.text(`Total Pengeluaran: ${formatRupiah(totalKeluar)}`, 14, finalY + 7);
+    doc.text(`Saldo Akhir: ${formatRupiah(saldoAkhir)}`, 14, finalY + 14);
+  
+    doc.save("Rekap_Tabungan.pdf");
+  }
+  
+  // Tambahan fungsi bantu:
+  function parseRupiah(str) {
+    return parseInt(str.replace(/[^\d]/g, "")) || 0;
+  }
+  
+  function formatRupiah(angka) {
+    return angka.toLocaleString("id-ID");
+  }
+  
+  function formatTanggal(tanggal) {
+    const d = new Date(tanggal);
+    return d.toLocaleDateString("id-ID", {
+      weekday: "short", year: "numeric", month: "long", day: "numeric"
+    });
+  }
+  
   
   // 🔧 Update bagian exportPDF()
 function exportPDF() {
@@ -649,13 +735,7 @@ function resetAll() {
 
       // 🔧 Penting! Reset ulang progress bar & hitung ulang
       updateProgress();
-     
-      document.getElementById("totalRekapBox").innerHTML = `
-      💰 <span style="background: gold; color: #111; padding: 6px 12px; border-radius: 10px;">
-        Total Saldo Akhir: Rp 0
-      </span>
-    `;
-    
+         
       Swal.fire({
         title: 'Berhasil!',
         text: 'Semua data telah direset.',
