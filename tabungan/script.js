@@ -273,23 +273,22 @@ function deleteHistory(index) {
 }
 
 function loadImage() {
-    const imgData = localStorage.getItem('image');
-    const preview = document.getElementById('preview');
-    const imageInput = document.getElementById('imageInput');
-  
-    if (imgData) {
-      preview.innerHTML = `<img id="previewImage" src="${imgData}" style="max-width:100%; border-radius:10px; cursor:pointer;">`;
-      imageInput.style.display = 'none'; // Sembunyikan input file
-  
-      // Tambahkan event click untuk full preview
-      const img = document.getElementById('previewImage');
-      img.addEventListener('click', () => toggleImagePreview(imgData));
-    } else {
-      preview.innerHTML = '';
-// Tetap tampilkan tombol ganti gambar, tapi sembunyikan input file
-imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediakan
-    }
+  const imgData = localStorage.getItem('image') || localStorage.getItem('imageUrl');
+  const preview = document.getElementById('previewImage');
+  const imageInput = document.getElementById('imageInput');
+
+  if (imgData) {
+    preview.innerHTML = `<img id="previewImageInner" src="${imgData}" style="max-width:100%; border-radius:10px; cursor:pointer;">`;
+    imageInput.style.display = 'none';
+
+    const img = document.getElementById('previewImageInner');
+    img.addEventListener('click', () => toggleImagePreview(imgData));
+  } else {
+    preview.innerHTML = '';
+    imageInput.style.display = 'block';
   }
+}
+
   function loadRekapBulanan() {
     const history = JSON.parse(localStorage.getItem('history')) || [];
     const summary = {};
@@ -350,10 +349,11 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
   
     const totalBox = document.getElementById('totalRekapBox');
     totalBox.innerHTML = `
-      💰 <span style="background: gold; color: #111; padding: 6px 12px; border-radius: 10px;">
-        Total Saldo Akhir: Rp ${formatNumber(totalSaldoAkhir)}
-      </span>
-    `;
+    <div style="background: gold; color: #111; padding: 6px 12px; border-radius: 10px; display: inline-block; max-width: 100%; text-align: center;">
+      <div style="font-weight: bold;">Total Saldo Akhir:</div>
+      <div style="color: green; font-weight: bold; font-size: 18px; word-break: break-word;">Rp ${formatNumber(totalSaldoAkhir)}</div>
+    </div>
+  `;  
   }
   
   
@@ -572,6 +572,50 @@ function exportPDF() {
 
   doc.save(`Riwayat Tabungan - ${firstDate} - ${lastDate}.pdf`);
 }
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+
+      // Validasi struktur
+      if (!imported || typeof imported !== "object" || !Array.isArray(imported.history)) {
+        throw new Error("Invalid structure");
+      }
+
+      // Simpan ke localStorage
+      localStorage.setItem("total", imported.total || "0");
+      localStorage.setItem("target", imported.target || "0");
+      localStorage.setItem("history", JSON.stringify(imported.history));
+
+      if (imported.imageUrl) {
+        localStorage.setItem("imageUrl", imported.imageUrl);
+      }
+
+      Swal.fire({
+        title: "Berhasil!",
+        text: "Data berhasil diimpor.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      setTimeout(() => location.reload(), 1000);
+    } catch (err) {
+      Swal.fire({
+        title: "Gagal",
+        text: "Format file tidak valid!",
+        icon: "error"
+      });
+      console.error(err);
+    }
+  };
+
+  reader.readAsText(file);
+}
 
 function resetAll() {
   Swal.fire({
@@ -599,7 +643,7 @@ function resetAll() {
       document.querySelector('#historyTable tbody').innerHTML = '';
 
       // Reset gambar
-      document.getElementById('preview').innerHTML = '';
+      document.getElementById('previewImage').innerHTML = '';
       document.getElementById('imageInput').value = '';
       document.getElementById('imageInput').style.display = 'block';
 

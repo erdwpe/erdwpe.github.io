@@ -336,3 +336,12 @@ th {
 .import-export-row button:hover {
   transform: scale(1.03);
 }
+/* Responsif untuk tabel rekap */
+.rekap-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+#rekapTable {
+  min-width: 460px; /* Supaya tidak terlalu sempit di mobile */
+}
