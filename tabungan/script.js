@@ -290,6 +290,72 @@ function loadImage() {
 imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediakan
     }
   }
+  function loadRekapBulanan() {
+    const history = JSON.parse(localStorage.getItem('history')) || [];
+    const summary = {};
+  
+    history.forEach(item => {
+      let safeDate = item.date;
+  
+      // Coba parse dari item.time jika date kosong
+      if (!safeDate || isNaN(new Date(safeDate).getTime())) {
+        const match = item.time?.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (match) {
+          const [_, d, m, y] = match;
+          safeDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        } else {
+          return;
+        }
+      }
+  
+      const date = new Date(safeDate);
+      if (isNaN(date.getTime())) return;
+  
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const nominal = parseInt(item.amount.replace(/\./g, '')) || 0;
+  
+      if (!summary[key]) {
+        summary[key] = { pemasukan: 0, pengeluaran: 0 };
+      }
+  
+      if (item.type.includes('Tambah')) {
+        summary[key].pemasukan += nominal;
+      } else {
+        summary[key].pengeluaran += nominal;
+      }
+    });
+  
+    const tbody = document.querySelector('#rekapTable tbody');
+    tbody.innerHTML = '';
+  
+    let totalSaldoAkhir = 0;
+  
+    Object.keys(summary).sort().forEach(monthKey => {
+      const data = summary[monthKey];
+      const saldo = data.pemasukan - data.pengeluaran;
+      totalSaldoAkhir += saldo;
+  
+      const date = new Date(`${monthKey}-01`);
+      const labelBulan = date.toLocaleDateString("id-ID", { month: 'long', year: 'numeric' });
+  
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${labelBulan}</td>
+        <td>➕ Rp ${formatNumber(data.pemasukan)}</td>
+        <td>➖ Rp ${formatNumber(data.pengeluaran)}</td>
+        <td>💰 Rp ${formatNumber(saldo)}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  
+    const totalBox = document.getElementById('totalRekapBox');
+    totalBox.innerHTML = `
+      💰 <span style="background: gold; color: #111; padding: 6px 12px; border-radius: 10px;">
+        Total Saldo Akhir: Rp ${formatNumber(totalSaldoAkhir)}
+      </span>
+    `;
+  }
+  
   
   // Fungsi untuk fullscreen preview
   function toggleImagePreview(src) {
@@ -316,69 +382,79 @@ imageInput.style.display = 'none'; // tetap disembunyikan, tapi tombol disediaka
     }
   }
   function showTab(id) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
-      tab.classList.remove('active');
-    });
-    document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.classList.remove('active');
-    });
+    const contents = document.querySelectorAll('.tab-content');
+    const buttons = document.querySelectorAll('.tab-button');
+  
+    contents.forEach(c => c.classList.remove('active'));
+    buttons.forEach(b => b.classList.remove('active'));
   
     document.getElementById(id).classList.add('active');
-    document.querySelector(`.tab-button[onclick="showTab('${id}')"]`).classList.add('active');
+    document.querySelector(`[onclick="showTab('${id}')"]`).classList.add('active');
+  
+    // Tambahan: panggil fungsi load saat tab dibuka
+    if (id === 'riwayat') {
+      loadHistory(); // ini agar filter bulan tetap berfungsi
+    } else if (id === 'rekap') {
+      loadRekapBulanan(); // INI YANG PENTING
+    }
   }
+  document.getElementById("imageInput").addEventListener("change", async function () {
+    const file = this.files[0];
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append("file", file);
+  
+    try {
+      const response = await fetch("https://api.ryzumi.vip/api/uploader/ryzencdn", {
+        method: "POST",
+        body: formData
+      });
+  
+      const result = await response.json();
+  
+      if (result.success && result.url) {
+        localStorage.setItem("imageUrl", result.url);
+  
+        // Tampilkan gambar
+        document.getElementById("previewImage").src = result.url;
+  
+        alert("✅ Gambar berhasil di-upload!");
+      } else {
+        alert("❌ Upload gagal.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Terjadi kesalahan saat upload gambar.");
+    }
+  });
   
   function exportData() {
-    const data = {
-      total: localStorage.getItem('total') || "0",
-      target: localStorage.getItem('target') || "0",
-      history: localStorage.getItem('history') || "[]",
-      image: localStorage.getItem('image') || ""
+    const history = JSON.parse(localStorage.getItem("history")) || [];
+    const totalAmount = parseInt(localStorage.getItem("total")) || 0;
+    const savingTarget = parseInt(localStorage.getItem("target")) || 0;
+    const imageUrl = localStorage.getItem("imageUrl") || "";
+  
+    const dataToExport = {
+      total: totalAmount,
+      target: savingTarget,
+      history: history,
+      imageUrl: imageUrl
     };
   
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
+      type: "application/json"
+    });
+  
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "tabungan_export.json";
+    a.download = `tabungan_export_${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   }
   
-  function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-  
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const imported = JSON.parse(e.target.result);
-        if (!imported || typeof imported !== "object") throw new Error();
-  
-        localStorage.setItem("total", imported.total || "0");
-        localStorage.setItem("target", imported.target || "0");
-        localStorage.setItem("history", imported.history || "[]");
-        localStorage.setItem("image", imported.image || "");
-  
-        Swal.fire({
-          title: "Berhasil!",
-          text: "Data berhasil diimpor.",
-          icon: "success",
-          timer: 1500,
-          showConfirmButton: false
-        });
-  
-        location.reload();
-      } catch (err) {
-        Swal.fire({
-          title: "Gagal",
-          text: "Format file tidak valid!",
-          icon: "error"
-        });
-      }
-    };
-    reader.readAsText(file);
-  }
   // 🔧 Update bagian exportPDF()
 function exportPDF() {
   const history = JSON.parse(localStorage.getItem('history')) || [];
@@ -529,7 +605,13 @@ function resetAll() {
 
       // 🔧 Penting! Reset ulang progress bar & hitung ulang
       updateProgress();
-
+     
+      document.getElementById("totalRekapBox").innerHTML = `
+      💰 <span style="background: gold; color: #111; padding: 6px 12px; border-radius: 10px;">
+        Total Saldo Akhir: Rp 0
+      </span>
+    `;
+    
       Swal.fire({
         title: 'Berhasil!',
         text: 'Semua data telah direset.',
