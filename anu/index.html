@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Web Tabungan — Catat Pemasukan & Pengeluaran</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-material-ui/material-ui.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="header">
+      <div class="header-left">
+        <h1>Web Tabungan</h1>
+        <p class="muted">Catat pemasukan & pengeluaran — siap deploy ke GitHub Pages</p>
+      </div>
+
+      <!-- Tab switcher + Theme toggle -->
+      <div class="header-actions">
+        <div class="tab-switcher" role="tablist" aria-label="Main tabs">
+          <button class="tab-btn active" data-target="transactions" role="tab" aria-selected="true">Transaksi</button>
+          <button class="tab-btn" data-target="goals" role="tab" aria-selected="false">Tujuan</button>
+        </div>
+
+        <button id="theme-toggle" class="icon-btn" aria-pressed="false" title="Ganti mode terang / gelap">
+          <!-- icon injected by JS -->
+        </button>
+      </div>
+    </header>
+
+    <!-- TRANSACTIONS VIEW -->
+    <section id="view-transactions" class="view active-view">
+      <section class="grid">
+        <div class="card form-card">
+          <h2>Tambah Transaksi</h2>
+          <form id="tx-form" class="form" autocomplete="off">
+            <div class="row">
+              <label class="field">
+                <div class="label-top">Tipe</div>
+                <select id="tx-type">
+                  <option value="income">Pemasukan</option>
+                  <option value="expense">Pengeluaran</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <div class="label-top">Kategori</div>
+                <input id="tx-category" type="text" placeholder="ex: Gaji / Makan / Transport" required />
+              </label>
+            </div>
+
+            <div class="row">
+              <label class="field">
+                <div class="label-top">Jumlah (Rp)</div>
+                <input id="tx-amount" type="text" inputmode="numeric" placeholder="100.000" required />
+              </label>
+
+              <label class="field">
+                <div class="label-top">Tanggal</div>
+                <input id="tx-date" type="date" required />
+              </label>
+            </div>
+
+            <label class="field">
+              <div class="label-top">Catatan (opsional)</div>
+              <input id="tx-note" type="text" placeholder="mis. bayar listrik" />
+            </label>
+
+            <div class="row actions">
+              <button type="submit" class="btn">Simpan</button>
+              <button type="button" id="clear-form" class="btn ghost">Bersihkan</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Ringkasan -->
+        <div class="card summary-card">
+          <h2>Ringkasan</h2>
+
+          <div class="summary-table">
+            <div class="row-item">
+              <div class="row-label">Saldo</div>
+              <div id="balance" class="row-value">Rp 0</div>
+            </div>
+            <div class="row-item">
+              <div class="row-label">Total Pemasukan</div>
+              <div id="total-income" class="row-value positive">Rp 0</div>
+            </div>
+            <div class="row-item">
+              <div class="row-label">Total Pengeluaran</div>
+              <div id="total-expense" class="row-value negative">Rp 0</div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <label class="field small-field">
+              <div class="label-top">Filter Bulan</div>
+              <input id="filter-month" type="month" />
+            </label>
+
+            <div class="btn-row">
+              <button id="export-json" class="btn">Export JSON</button>
+              <label class="btn ghost file-label">
+                Import
+                <input id="import-file" type="file" accept="application/json" style="display:none" />
+              </label>
+              <button id="reset-data" class="btn danger">Reset Semua</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card table-card">
+        <h2>Daftar Transaksi</h2>
+        <div id="no-tx" class="muted">Belum ada transaksi.</div>
+        <table id="tx-table" class="tx-table" aria-live="polite">
+          <thead>
+            <tr>
+              <th>Tanggal</th><th>Tipe</th><th>Kategori</th><th>Jumlah (Rp)</th><th>Catatan</th><th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </section>
+
+    <!-- GOALS VIEW -->
+    <section id="view-goals" class="view" aria-hidden="true">
+      <div class="card goals-card">
+        <h2>Tujuan Tabungan</h2>
+
+        <form id="goal-form" class="form-inline" autocomplete="off">
+          <input id="goal-name" type="text" placeholder="Nama tujuan (mis. Liburan Bali)" required />
+          <input id="goal-target" type="text" inputmode="numeric" placeholder="Target (Rp) - 5.000.000" required />
+          <input id="goal-date" type="date" />
+          <button id="add-goal" class="btn" type="submit">Tambah Tujuan</button>
+        </form>
+
+        <div id="no-goal" class="muted" style="margin-top:12px">Belum ada tujuan tabungan.</div>
+        <div id="goals-list" class="goals-list" aria-live="polite" style="margin-top:12px"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <small>Minimal, offline-friendly, dan gratis — di-deploy di GitHub Pages.</small>
+    </footer>
+  </main>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
