@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>for you ❤️</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:radial-gradient(circle at center,#220011 0%,#000 70%);
+}
+
+canvas{
+    position:absolute;
+    inset:0;
+}
+
+#overlay{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+}
+
+#teksCinta{
+    font-family:'Great Vibes',cursive;
+    font-size:clamp(32px,6vw,48px);
+    color:#fff;
+    text-align:center;
+    text-shadow:
+        0 0 15px #ff2e88,
+        0 0 40px #ff2e88,
+        0 0 70px #ff2e88;
+    opacity:0;
+    transition:1s ease;
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<canvas id="fx"></canvas>
+
+<div id="overlay">
+  <div id="teksCinta">I Love ❤️ You Sayang</div>
+</div>
+
+<!-- MUSIC -->
+<audio id="bgm" preload="auto" loop muted playsinline></audio>
+<script>
+const bg=document.getElementById("bg")
+const fx=document.getElementById("fx")
+const bctx=bg.getContext("2d")
+const ctx=fx.getContext("2d")
+
+bg.width=fx.width=innerWidth
+bg.height=fx.height=innerHeight
+
+// MATRIX
+let rain=[]
+let size=14
+let cols=bg.width/size
+
+for(let i=0;i<cols;i++) rain[i]=1
+
+function matrix(){
+    bctx.fillStyle="rgba(0,0,0,.05)"
+    bctx.fillRect(0,0,bg.width,bg.height)
+
+    bctx.fillStyle="#ff2e88"
+    bctx.font=size+"px monospace"
+
+    for(let i=0;i<rain.length;i++){
+        let t=Math.random()>0.5?"0":"1"
+        bctx.fillText(t,i*size,rain[i]*size)
+        if(rain[i]*size>bg.height && Math.random()>0.97) rain[i]=0
+        rain[i]++
+    }
+}
+
+// PARTICLE
+let dots=[]
+let words=["3","2","1","YOU","ARE","MY","LOVE"]
+let step=0
+let heartMode=false
+let merge=true
+let rot=0
+
+class P{
+    constructor(x,y){
+        this.x=Math.random()*fx.width
+        this.y=Math.random()*fx.height
+        this.tx=x
+        this.ty=y
+        this.vx=0
+        this.vy=0
+    }
+    move(){
+        if(heartMode){
+            if(merge){
+                this.vx=(this.tx-this.x)*0.04
+                this.vy=(this.ty-this.y)*0.04
+            }else{
+                this.vx+=(Math.random()-0.5)*1.5
+                this.vy+=(Math.random()-0.5)*1.5
+            }
+        }else{
+            this.x+=(this.tx-this.x)*0.08
+            this.y+=(this.ty-this.y)*0.08
+        }
+        this.x+=this.vx
+        this.y+=this.vy
+    }
+    draw(){
+        if(heartMode){
+            ctx.font="20px Arial"
+            ctx.fillStyle="#ff2e88"
+            ctx.fillText("❤️",this.x,this.y)
+        }else{
+            ctx.beginPath()
+            ctx.arc(this.x,this.y,2.5,0,Math.PI*2)
+            ctx.fillStyle="#fff"
+            ctx.shadowColor="#ff2e88"
+            ctx.shadowBlur=12
+            ctx.fill()
+        }
+    }
+}
+
+function bikinTulisan(txt){
+    dots=[]
+    const tmp=document.createElement("canvas")
+    const t=tmp.getContext("2d")
+    tmp.width=fx.width
+    tmp.height=fx.height
+
+    let fs=Math.min(fx.width/4,180)
+    t.fillStyle="#fff"
+    t.font="bold "+fs+"px Arial"
+    t.textAlign="center"
+    t.textBaseline="middle"
+    t.fillText(txt,fx.width/2,fx.height/2)
+
+    let data=t.getImageData(0,0,fx.width,fx.height)
+
+    for(let y=0;y<data.height;y+=4){
+        for(let x=0;x<data.width;x+=4){
+            let i=(y*data.width+x)*4
+            if(data.data[i]>150){
+                dots.push(new P(x,y))
+            }
+        }
+    }
+}
+
+function bikinLove(){
+    dots=[]
+    let cx=fx.width/2
+    let cy=fx.height/2-10
+
+    for(let a=0;a<Math.PI*2;a+=0.12){
+        let x=16*Math.pow(Math.sin(a),3)
+        let y=-(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))
+        dots.push(new P(cx+x*15,cy+y*15))
+    }
+}
+
+// SPARKLE
+let sparkle=[]
+function tambahSparkle(){
+    sparkle.push({
+        x:fx.width/2+(Math.random()-0.5)*250,
+        y:fx.height/2+(Math.random()-0.5)*200,
+        size:Math.random()*3+1,
+        life:60
+    })
+}
+
+function gambarSparkle(){
+    sparkle.forEach((s,i)=>{
+        ctx.beginPath()
+        ctx.arc(s.x,s.y,s.size,0,Math.PI*2)
+        ctx.fillStyle="rgba(255,200,230,"+(s.life/60)+")"
+        ctx.fill()
+        s.life--
+        if(s.life<=0) sparkle.splice(i,1)
+    })
+}
+
+// LOOP
+function loop(){
+    matrix()
+    ctx.clearRect(0,0,fx.width,fx.height)
+
+    if(heartMode){
+        rot+=0.002
+        ctx.save()
+        ctx.translate(fx.width/2,fx.height/2)
+        ctx.rotate(rot)
+        ctx.translate(-fx.width/2,-fx.height/2)
+    }
+
+    dots.forEach(d=>{
+        d.move()
+        d.draw()
+    })
+
+    if(heartMode){
+        ctx.restore()
+        if(Math.random()<0.3) tambahSparkle()
+        gambarSparkle()
+    }
+
+    requestAnimationFrame(loop)
+}
+loop()
+
+function lanjut(){
+    if(step<words.length){
+        bikinTulisan(words[step])
+        step++
+        setTimeout(lanjut,1700)
+    }else{
+        heartMode=true
+        bikinLove()
+        document.getElementById("teksCinta").style.opacity=1
+        
+        setInterval(()=>merge=!merge,3000)
+    }
+}
+
+setTimeout(lanjut,1000)
+
+const bgm = document.getElementById("bgm");
+
+// set source lewat JS biar lebih clean
+bgm.src = "https://erdwpe.github.io/media/songg.mp3";
+
+window.addEventListener("load", () => {
+
+    bgm.muted = true;
+    bgm.volume = 0;
+
+    bgm.play().then(() => {
+
+        // unmute setelah berhasil play
+        setTimeout(() => {
+            bgm.muted = false;
+
+            // fade in
+            let vol = 0;
+            const fade = setInterval(() => {
+                if (vol < 0.4) {
+                    vol += 0.02;
+                    bgm.volume = vol;
+                } else {
+                    clearInterval(fade);
+                }
+            }, 100);
+
+        }, 300);
+
+    }).catch(() => {
+        console.log("Autoplay diblok");
+    });
+
+});
+
+</script>
+</body>
+</html>
