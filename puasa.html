@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puasa Tracker Auto Hijriyah</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    margin: 0;
+    padding: 20px;
+}
+.container { max-width: 900px; margin: auto; }
+h1 { text-align: center; }
+
+.progress-container {
+    background: #ddd;
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+.progress-bar {
+    height: 20px;
+    background: #00ffae;
+    width: 0%;
+    transition: 0.4s;
+}
+
+.day-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.day-item {
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.locked { opacity: 0.4; background: rgba(255,255,255,0.05); }
+.active { background: rgba(0,255,174,0.2); }
+
+.prayer-box {
+    margin-top: 30px;
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌙 Puasa Tracker Otomatis</h1>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <p id="progressText"></p>
+
+    <div id="ramadanStatus"></div>
+    <div class="day-list" id="dayList"></div>
+
+    <div class="prayer-box">
+        <h2>🕌 Jadwal Sholat Hari Ini (Surabaya)</h2>
+        <div id="prayerTimes">Loading...</div>
+    </div>
+</div>
+
+<script>
+const totalDays = 30;
+const dayList = document.getElementById("dayList");
+const progressBar = document.getElementById("progressBar");
+const progressText = document.getElementById("progressText");
+const prayerBox = document.getElementById("prayerTimes");
+const ramadanStatus = document.getElementById("ramadanStatus");
+
+let savedData = JSON.parse(localStorage.getItem("puasaData")) || [];
+
+// ===== FORMAT DATE =====
+function getTodayFormatted() {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
+// ===== DETECT HIJRI DATE =====
+async function getHijriDate() {
+    try {
+        const res = await fetch(
+            `https://api.aladhan.com/v1/gToH?date=${getTodayFormatted()}&method=20`
+        );
+        const data = await res.json();
+        return data.data.hijri;
+    } catch (err) {
+        console.error("Hijri error:", err);
+        return null;
+    }
+}
+
+// ===== GET PRAYER TIMES =====
+async function getPrayerTimes() {
+    try {
+        const res = await fetch(
+            `https://api.aladhan.com/v1/timingsByCity?city=Surabaya&country=Indonesia&method=20&date=${getTodayFormatted()}`
+        );
+        const data = await res.json();
+        const t = data.data.timings;
+
+        prayerBox.innerHTML = `
+            <p><strong>Imsak:</strong> ${t.Imsak}</p>
+            <p><strong>Subuh:</strong> ${t.Fajr}</p>
+            <p><strong>Dzuhur:</strong> ${t.Dhuhr}</p>
+            <p><strong>Ashar:</strong> ${t.Asr}</p>
+            <p><strong>Maghrib:</strong> ${t.Maghrib}</p>
+            <p><strong>Isya:</strong> ${t.Isha}</p>
+        `;
+    } catch (err) {
+        prayerBox.innerHTML = "Gagal ambil jadwal sholat ❌";
+        console.error("Prayer error:", err);
+    }
+}
+
+// ===== RENDER DAYS =====
+function renderDays(currentDay) {
+    dayList.innerHTML = "";
+
+    for (let i = 1; i <= totalDays; i++) {
+        const div = document.createElement("div");
+        div.className = "day-item";
+
+        if (i > currentDay) {
+            div.classList.add("locked");
+            div.innerHTML = `Hari ${i} 🔒`;
+        } else {
+            const checked = savedData.includes(i) ? "checked" : "";
+            div.innerHTML = `
+                <label>
+                    <input type="checkbox" ${checked} onchange="toggleDay(${i})">
+                    Hari ${i}
+                </label>
+            `;
+        }
+
+        dayList.appendChild(div);
+    }
+
+    updateProgress();
+}
+
+function toggleDay(day) {
+    if (savedData.includes(day)) {
+        savedData = savedData.filter(d => d !== day);
+    } else {
+        savedData.push(day);
+    }
+    localStorage.setItem("puasaData", JSON.stringify(savedData));
+    updateProgress();
+}
+
+function updateProgress() {
+    const percent = (savedData.length / totalDays) * 100;
+    progressBar.style.width = percent + "%";
+    progressText.innerText =
+        `${savedData.length} dari ${totalDays} hari selesai (${Math.round(percent)}%)`;
+}
+
+// ===== INIT =====
+// ===== TANGGAL RESMI RAMADAN INDONESIA =====
+const ramadanStart = new Date("2026-02-19"); // GANTI sesuai keputusan resmi
+
+async function init() {
+
+    const today = new Date();
+
+    const diffTime = today - ramadanStart;
+    const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    if (currentDay >= 1 && currentDay <= 30) {
+        ramadanStatus.innerHTML = `<h3>Hari ke-${currentDay} Ramadan</h3>`;
+        renderDays(currentDay);
+    } else if (currentDay < 1) {
+        ramadanStatus.innerHTML = `<h3>Ramadan belum dimulai</h3>`;
+    } else {
+        ramadanStatus.innerHTML = `<h3>Ramadan sudah selesai</h3>`;
+    }
+
+    getPrayerTimes();
+}
+
+init();
+</script>
+
+</body>
+</html>
