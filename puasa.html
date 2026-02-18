@@ -173,21 +173,33 @@ function updateProgress() {
 
 // ===== INIT =====
 // ===== TANGGAL RESMI RAMADAN INDONESIA =====
-const ramadanStart = new Date("2026-02-19"); // GANTI sesuai keputusan resmi
+const ramadanStart = new Date(2026, 1, 19); // 19 Feb = Hari 1
 
 async function init() {
 
     const today = new Date();
+    
+    // bikin copy biar aman
+    const start = new Date(ramadanStart);
 
-    const diffTime = today - ramadanStart;
-    const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    // reset jam biar gak ngaruh timezone
+    today.setHours(0,0,0,0);
+    start.setHours(0,0,0,0);
 
-    if (currentDay >= 1 && currentDay <= 30) {
+    const diffDays = Math.floor(
+        (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    const currentDay = diffDays + 1;
+
+    if (diffDays < 0) {
+        ramadanStatus.innerHTML = `<h3>Ramadan belum dimulai</h3>`;
+    } 
+    else if (currentDay >= 1 && currentDay <= 30) {
         ramadanStatus.innerHTML = `<h3>Hari ke-${currentDay} Ramadan</h3>`;
         renderDays(currentDay);
-    } else if (currentDay < 1) {
-        ramadanStatus.innerHTML = `<h3>Ramadan belum dimulai</h3>`;
-    } else {
+    } 
+    else {
         ramadanStatus.innerHTML = `<h3>Ramadan sudah selesai</h3>`;
     }
 
