@@ -75,7 +75,59 @@ h1{
     margin-bottom:12px;
     box-shadow:var(--soft-shadow);
 }
+/* ================= SEARCH ================= */
 
+.search-card h3{
+    margin-bottom:12px;
+}
+
+.search-wrapper{
+    display:flex;
+    gap:8px;
+    align-items:center;
+}
+
+.search-wrapper input{
+    flex:1;
+    padding:10px 14px;
+    border-radius:12px;
+    border:none;
+    outline:none;
+    font-family:inherit;
+    background:rgba(0,0,0,0.05);
+    transition:0.2s ease;
+}
+
+body.dark .search-wrapper input{
+    background:rgba(255,255,255,0.1);
+    color:white;
+}
+
+.search-wrapper input:focus{
+    box-shadow:0 0 0 2px #4facfe;
+}
+
+.search-wrapper button{
+    padding:10px 18px;
+    border:none;
+    border-radius:12px;
+    font-family:inherit;
+    font-weight:600;
+    cursor:pointer;
+    background:linear-gradient(135deg,#4facfe,#00c6ff);
+    color:white;
+    transition:0.2s ease;
+}
+
+.search-wrapper button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 14px rgba(0,0,0,0.15);
+}
+
+#cityResult{
+    margin-top:14px;
+    font-size:14px;
+}
 /* ================= PROGRESS ================= */
 
 .progress-container{
@@ -199,7 +251,120 @@ body.dark .day-item{
     border-radius:10px;
     background:rgba(0,0,0,0.05);
 }
+/* LAILATUL CSS */
+.lailatul-box h3{
+    margin-bottom:12px;
+    text-align:center;
+    overflow:hidden;
+}
 
+.lailatul-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(80px,1fr));
+    gap:8px;
+}
+
+.lailatul-item{
+    padding:10px;
+    border-radius:12px;
+    text-align:center;
+    font-weight:600;
+    background:rgba(0,0,0,0.05);
+}
+
+.lailatul-item.ganjil{
+    background:linear-gradient(135deg,#4facfe,#00c6ff);
+    color:white;
+}
+
+body.dark .lailatul-item:not(.ganjil){
+    background:#1e2a30;
+}
+
+.lailatul-item.special{
+    box-shadow:0 0 12px rgba(255,215,0,0.5);
+    border:2px solid gold;
+}
+
+/* DOA NIAT PUASA DAN BERBUKA PUASA */
+.ramadan-arch{
+    background:var(--card);
+    border-radius:125px 125px 30px 30px;
+    padding:28px 20px;
+    margin-bottom:20px;
+    border:3px solid gold;
+    box-shadow:
+        0 0 18px rgba(255,215,0,0.15),
+        var(--soft-shadow);
+    overflow:hidden;
+    position:relative;
+}
+
+body.dark .ramadan-arch{
+    background:rgba(255,255,255,0.06);
+    border:2px solid rgba(255,215,0,0.6);
+}
+
+.arch-top{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    padding:0 10px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+}
+
+.arch-tab{
+  color:var(--text);
+    flex:1;
+    min-width:0;
+    max-width:140px;
+    padding:10px 8px;
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+    font-family:inherit;
+    font-weight:600;
+    background:rgba(0,0,0,0.05);
+    transition:0.2s ease;
+    text-align:center;
+}
+body.dark .arch-tab:not(.active){
+    background:rgba(255,255,255,0.06);
+    color:#d6d6d6;
+}
+
+
+.arch-tab.active{
+    background:linear-gradient(135deg,#4facfe,#00c6ff);
+    color:white;
+}
+
+.arch-content{
+    text-align:center;
+    transition:0.25s ease;
+}
+
+.arch-content h3{
+    margin-bottom:12px;
+}
+
+.arabic{
+    font-size:22px;
+    line-height:1.9;
+    margin-bottom:12px;
+}
+
+.latin{
+    font-style:italic;
+    margin-bottom:8px;
+}
+
+.arti{
+    font-size:14px;
+    opacity:0.85;
+}
 /* ================= RESPONSIVE FIX ================= */
 
 @media (min-width:600px){
@@ -234,19 +399,24 @@ body.dark .day-item{
 <body>
 
 <div class="container">
-<div class="card">
-    <h3>🔎 TEMUKAN IMSAK WILAYAH</h3>
-    <input type="text" id="cityInput" placeholder="Masukkan nama kota..." 
-        style="width:100%;padding:8px;margin:10px 0;font-family:inherit;">
-    <button onclick="searchCityPrayer()" 
-        style="padding:8px 12px;font-family:inherit;cursor:pointer;">
-        CARI
-    </button>
-
-    <div id="cityResult" style="margin-top:15px;"></div>
+<div class="card lailatul-box">
+    <h3>🌙 10 MALAM TERAKHIR</h3>
+    <div class="lailatul-grid" id="lailatulGrid"></div>
 </div>
-<h1>PUASA TRACKER 2026</h1>
 
+<h1>PUASA 2026</h1>
+<div class="ramadan-arch">
+
+<div class="arch-top">
+    <button class="arch-tab active" onclick="showNiat()">Niat Puasa</button>
+    <button class="arch-tab" onclick="showDoa()">Doa Berbuka</button>
+    <button class="arch-tab" onclick="showLailatul()">Lailatul Qadar</button>
+</div>
+
+    <div class="arch-content" id="archContent">
+        <!-- Konten akan diganti via JS -->
+    </div>
+</div>
 <div class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()">🌑</div>
 
 <div class="card" id="countdown"></div>
@@ -265,20 +435,38 @@ body.dark .day-item{
 <div class="card" id="ramadanStatus"></div>
 
 <div class="day-list" id="dayList"></div>
-<div class="card quote-box" id="dailyQuote">
-    Loading quote...
+<div class="card search-card">
+    <h3>🔎 TEMUKAN IMSAK WILAYAH</h3>
+
+    <div class="search-wrapper">
+        <input 
+            type="text" 
+            id="cityInput" 
+            placeholder="Masukkan nama kota..."
+            onkeypress="handleEnter(event)"
+        >
+        <button onclick="searchCityPrayer()">Cari</button>
+    </div>
+
+    <div id="cityResult"></div>
 </div>
 <div class="prayer-box" id="prayerBox">
     Loading...
 </div>
 
 </div>
-
 <script>
+function handleEnter(event){
+    if(event.key === "Enter"){
+        searchCityPrayer();
+    }
+}
+
 const totalDays = 30;
 const ramadanStart = new Date(2026,1,19);
 
 let savedData = JSON.parse(localStorage.getItem("puasaData")) || [];
+savedData = [...new Set(savedData)].sort((a,b)=>a-b);
 
 const dayList = document.getElementById("dayList");
 const progressBar = document.getElementById("progressBar");
@@ -290,6 +478,7 @@ const countdownBox = document.getElementById("countdown");
 const ramadanStatus = document.getElementById("ramadanStatus");
 const prayerBox = document.getElementById("prayerBox");
 const toggleBtn = document.getElementById("themeToggle");
+
 /* ================= DARK MODE ================= */
 
 function toggleDarkMode(){
@@ -308,49 +497,6 @@ function toggleDarkMode(){
 })();
 
 /* ================= DATE ================= */
-/* =========================
-   AYAT RAMADAN (AMAN)
-========================= */
-
-const ramadanAyatPremium = [
-    { ayah:293, category:"PUASA" },   // Al-Baqarah 183
-    { ayah:294, category:"PUASA" },   // 184
-    { ayah:295, category:"PUASA" },   // 185
-    { ayah:296, category:"DOA" },     // 186
-    { ayah:297, category:"PUASA" },   // 187
-
-    { ayah:39, category:"SABAR" },    // Al-Baqarah 45
-    { ayah:153, category:"SABAR" },   // 153
-    { ayah:286, category:"TAQWA" },   // 286
-    { ayah:135, category:"TAQWA" },   // Ali Imran
-    { ayah:200, category:"SABAR" },   // Ali Imran
-
-    { ayah:4739, category:"TAQWA" },  // Az-Zumar 10
-    { ayah:6135, category:"SABAR" },  // Al-Insyirah 5
-    { ayah:6136, category:"SABAR" },  // Al-Insyirah 6
-    { ayah:6152, category:"LAILATUL QADR" },
-    { ayah:6153, category:"LAILATUL QADR" },
-    { ayah:6154, category:"LAILATUL QADR" },
-    { ayah:6155, category:"LAILATUL QADR" },
-    { ayah:6156, category:"LAILATUL QADR" },
-
-    { ayah:4960, category:"WAHYU" },  // Ad-Dukhan 3
-    { ayah:2007, category:"AMPUNAN" },// At-Taubah 104
-    { ayah:4213, category:"TAQWA" },  // Al-Hajj 37
-    { ayah:2842, category:"SABAR" },  // An-Nahl 127
-    { ayah:4515, category:"DOA" },    // Ghafir 60
-    { ayah:2338, category:"IKHLAS" }, // Yunus 22
-    { ayah:1500, category:"TAQWA" },  // An-Nisa 131
-    { ayah:2755, category:"SABAR" },  // Ibrahim 5
-    { ayah:6050, category:"TAQWA" },  // Al-Hadid 23
-    { ayah:6106, category:"SABAR" },  // Al-Mujadilah 11
-    { ayah:6234, category:"AMPUNAN" },// An-Nas 6
-    { ayah:1, category:"PETUNJUK" }   // Al-Fatihah 1
-];
-
-/* =========================
-   UTIL DATE
-========================= */
 
 function calculateCurrentDay(){
     const now = new Date();
@@ -376,41 +522,73 @@ function calculateCurrentDayWithMaghrib(maghribHour, maghribMinute){
     return diffDays;
 }
 
-/* =========================
-   QUOTE
-========================= */
+/* ================= DOA TABS ================= */
 
-async function showDailyQuote(){
-    try{
-        const currentDay = calculateCurrentDay();
-        const index = (currentDay - 1) % ramadanAyatPremium.length;
-        const selected = ramadanAyatPremium[index];
+function setActiveTab(index){
+    const tabs = document.querySelectorAll(".arch-tab");
+    const content = document.getElementById("archContent");
 
-        const res = await fetch(
-            `https://api.alquran.cloud/v1/ayah/${selected.ayah}/id.indonesian`
-        );
-
-        if(!res.ok) throw new Error("Response not OK");
-
-        const data = await res.json();
-
-        document.getElementById("dailyQuote").innerHTML = `
-            <div class="quote-category">${selected.category}</div>
-            <div>"${data.data.text}"</div>
-            <br>
-            <strong>(QS. ${data.data.surah.name}: ${data.data.numberInSurah})</strong>
-        `;
-
-    }catch(err){
-        console.error(err);
-        document.getElementById("dailyQuote").innerText =
-        "Gagal mengambil ayat Ramadan.";
+    if(tabs[index].classList.contains("active")){
+        tabs.forEach(t=>t.classList.remove("active"));
+        content.innerHTML="";
+        return false;
     }
+
+    tabs.forEach((t,i)=>{
+        t.classList.remove("active");
+        if(i === index) t.classList.add("active");
+    });
+
+    return true;
 }
 
-/* =========================
-   RENDER
-========================= */
+function showNiat(){
+    if(!setActiveTab(0)) return;
+    document.getElementById("archContent").innerHTML = `
+        <h3>🌙 NIAT PUASA</h3>
+        <p class="arabic">
+        نَوَيْتُ صَوْمَ غَدٍ عَنْ أَدَاءِ فَرْضِ شَهْرِ رَمَضَانَ لِلّٰهِ تَعَالَى
+        </p>
+        <p class="latin">
+        Nawaitu shauma ghadin 'an adā'i fardhi syahri Ramadhāna lillāhi ta'ālā
+        </p>
+        <p class="arti">
+        Saya niat puasa esok hari untuk menunaikan fardhu Ramadan karena Allah Ta’ala.
+        </p>`;
+}
+
+function showDoa(){
+    if(!setActiveTab(1)) return;
+    document.getElementById("archContent").innerHTML = `
+        <h3>🌅 DOA BERBUKA</h3>
+        <p class="arabic">
+        اَللّٰهُمَّ لَكَ صُمْتُ وَبِكَ آمَنْتُ وَعَلَيْكَ تَوَكَّلْتُ وَعَلَىٰ رِزْقِكَ أَفْطَرْتُ
+        </p>
+        <p class="latin">
+        Allahumma laka shumtu wa bika aamantu wa ‘alaika tawakkaltu wa ‘ala rizqika afthartu
+        </p>
+        <p class="arti">
+        Ya Allah, karena-Mu aku berpuasa, kepada-Mu aku beriman, kepada-Mu aku bertawakal, dan dengan rezeki-Mu aku berbuka.
+        </p>`;
+}
+
+function showLailatul(){
+    if(!setActiveTab(2)) return;
+    document.getElementById("archContent").innerHTML = `
+        <h3>✨ DOA LAILATUL QADAR</h3>
+        <p class="arabic">
+        اللّٰهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ العَفْوَ فَاعْفُ عَنِّي
+        </p>
+        <p class="latin">
+        Allahumma innaka 'afuwwun tuhibbul 'afwa fa'fu 'anni
+        </p>
+        <p class="arti">
+        Ya Allah, Engkau Maha Pemaaf dan mencintai pemaafan, maka maafkanlah aku.
+        </p>
+        <p style="font-size:13px;opacity:0.8;">💛 Dibaca di 10 malam terakhir, terutama malam ganjil.</p>`;
+}
+
+/* ================= RENDER ================= */
 
 function renderDays(currentDay){
     dayList.innerHTML="";
@@ -422,12 +600,13 @@ function renderDays(currentDay){
             div.classList.add("locked");
             div.innerHTML=`${i} 🔒`;
         }else{
-            const checked=savedData.includes(i)?"checked":"";
             div.innerHTML=`
             <label>
-            <input type="checkbox" ${checked} onchange="toggleDay(${i})">
+            <input type="checkbox" ${savedData.includes(i)?"checked":""}>
             ${i}
             </label>`;
+            div.querySelector("input")
+               .addEventListener("change",()=>toggleDay(i));
         }
         dayList.appendChild(div);
     }
@@ -439,6 +618,7 @@ function toggleDay(day){
     }else{
         savedData.push(day);
     }
+    savedData.sort((a,b)=>a-b);
     localStorage.setItem("puasaData",JSON.stringify(savedData));
     updateStats();
 }
@@ -467,34 +647,27 @@ function updateCountdown(){
     end.setDate(end.getDate()+totalDays);
 
     const diff=Math.ceil((end-today)/(1000*60*60*24));
-
-    countdownBox.innerHTML= diff>0
-    ? `<div class="headline">IDUL FITRI DALAM ${diff} HARI</div>`
-    : `<div class="headline">SELAMAT IDUL FITRI</div>`;
+    countdownBox.innerHTML=
+        diff>0
+        ? `<div class="headline">IDUL FITRI DALAM ${diff} HARI</div>`
+        : `<div class="headline">SELAMAT IDUL FITRI</div>`;
 }
 
-/* =========================
-   PRAYER TIME
-========================= */
+/* ================= PRAYER ================= */
 
 async function getPrayerTimes(){
     try{
-        const hari = ["MINGGU","SENIN","SELASA","RABU","KAMIS","JUMAT","SABTU"];
-        const today = new Date();
-        const namaHari = hari[today.getDay()];
-
-        const timestamp = Math.floor(Date.now()/1000);
-
-        const res = await fetch(
+        const timestamp=Math.floor(Date.now()/1000);
+        const res=await fetch(
             `https://api.aladhan.com/v1/timings/${timestamp}?latitude=-7.2575&longitude=112.7521&method=20`
         );
+        const data=await res.json();
+        if(!data.data) return;
 
-        const data = await res.json();
-        const t = data.data.timings;
+        const t=data.data.timings;
 
-        // ======= TAMPILKAN JADWAL =======
-        prayerBox.innerHTML = `
-        <h3>JADWAL SHOLAT SURABAYA HARI ${namaHari}</h3>
+        prayerBox.innerHTML=`
+        <h3>JADWAL SHOLAT SURABAYA</h3>
         <p>IMSAK : ${t.Imsak}</p>
         <p>SUBUH : ${t.Fajr}</p>
         <p>DZUHUR : ${t.Dhuhr}</p>
@@ -502,85 +675,83 @@ async function getPrayerTimes(){
         <p>MAGHRIB : ${t.Maghrib}</p>
         <p>ISYA : ${t.Isha}</p>`;
 
-        // ======= AUTO CHECKLIST SETELAH MAGHRIB =======
+        const maghribRaw=t.Maghrib.split(" ")[0];
+        const [h,m]=maghribRaw.split(":").map(Number);
 
-        const maghribRaw = t.Maghrib.split(" ")[0];
-        const [maghribHour, maghribMinute] = maghribRaw.split(":").map(Number);
+        const now=new Date();
+        const maghribTime=new Date();
+        maghribTime.setHours(h,m,0,0);
 
-        const now = new Date();
-        const maghribTime = new Date();
-        maghribTime.setHours(maghribHour, maghribMinute, 0, 0);
-
-        const currentDay = calculateCurrentDayWithMaghrib(
-            maghribHour,
-            maghribMinute
-        );
-
-        // supaya tidak spam checklist
-        const lastChecked = localStorage.getItem("lastAutoCheck");
+        const currentDay=calculateCurrentDayWithMaghrib(h,m);
+        const lastChecked=localStorage.getItem("lastAutoCheck");
 
         if(
-            now >= maghribTime &&
-            currentDay >= 1 &&
-            currentDay <= totalDays &&
-            lastChecked != currentDay
+            now>=maghribTime &&
+            currentDay>=1 &&
+            currentDay<=totalDays &&
+            lastChecked!=currentDay
         ){
             if(!savedData.includes(currentDay)){
                 savedData.push(currentDay);
-                localStorage.setItem("puasaData", JSON.stringify(savedData));
+                savedData.sort((a,b)=>a-b);
+                localStorage.setItem("puasaData",JSON.stringify(savedData));
             }
-
-            localStorage.setItem("lastAutoCheck", currentDay);
-
+            localStorage.setItem("lastAutoCheck",currentDay);
             renderDays(currentDay);
             updateStats();
         }
 
     }catch(err){
-        console.error("Prayer API Error:", err);
+        console.error("Prayer API Error:",err);
     }
 }
+
 async function searchCityPrayer(){
-    const city = document.getElementById("cityInput").value.trim();
-    const resultBox = document.getElementById("cityResult");
+    const city=document.getElementById("cityInput").value.trim();
+    const resultBox=document.getElementById("cityResult");
 
     if(!city){
-        resultBox.innerHTML = "Masukkan nama kota dulu bro.";
+        resultBox.innerHTML="Masukkan nama kota dulu bro.";
         return;
     }
 
-    resultBox.innerHTML = "Mencari jadwal...";
+    resultBox.innerHTML="Mencari jadwal...";
 
     try{
-        const timestamp = Math.floor(Date.now()/1000);
-
-        const res = await fetch(
+        const res=await fetch(
             `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=Indonesia&method=20`
         );
+        const data=await res.json();
 
-        const data = await res.json();
-
-        if(data.code !== 200){
-            resultBox.innerHTML = "Kota tidak ditemukan.";
+        if(data.code!==200){
+            resultBox.innerHTML="Kota tidak ditemukan.";
             return;
         }
 
-        const t = data.data.timings;
-
-        resultBox.innerHTML = `
+        const t=data.data.timings;
+        resultBox.innerHTML=`
         <strong>${city.toUpperCase()}</strong><br><br>
         IMSAK : ${t.Imsak}<br>
-        MAGHRIB : ${t.Maghrib}
-        `;
-
+        MAGHRIB : ${t.Maghrib}`;
     }catch(err){
-        resultBox.innerHTML = "Gagal mengambil data.";
-        console.log(err);
+        resultBox.innerHTML="Gagal mengambil data.";
     }
 }
-/* =========================
-   INIT
-========================= */
+
+function renderLailatul(){
+    const grid=document.getElementById("lailatulGrid");
+    grid.innerHTML="";
+    for(let i=21;i<=30;i++){
+        const div=document.createElement("div");
+        div.className="lailatul-item";
+        if(i%2!==0) div.classList.add("ganjil");
+        if(i===27) div.classList.add("special");
+        div.innerText="Malam "+i;
+        grid.appendChild(div);
+    }
+}
+
+/* ================= INIT ================= */
 
 function init(){
     const currentDay=calculateCurrentDay();
@@ -589,17 +760,15 @@ function init(){
         ramadanStatus.innerHTML="RAMADAN BELUM DIMULAI";
     }else if(currentDay<=totalDays){
         ramadanStatus.innerHTML="HARI KE-"+currentDay+" RAMADAN";
-        renderDays(currentDay);
     }else{
-        ramadanStatus.innerHTML=
-        `<div class="headline">SELAMAT IDUL FITRI</div>`;
+        ramadanStatus.innerHTML=`<div class="headline">SELAMAT IDUL FITRI</div>`;
     }
 
-    updateStats();
     renderDays(currentDay);
+    updateStats();
     updateCountdown();
     getPrayerTimes();
-    showDailyQuote();
+    renderLailatul();
 
     setInterval(getPrayerTimes,60000);
 }
